@@ -3,6 +3,7 @@ from django.contrib.auth.models import UserManager, AbstractUser
 
 import datetime
 
+
 # Create your models here.
 
 
@@ -53,12 +54,8 @@ class User(AbstractUser):
     """
 
     options = (
-        ('Admin', 'admin'),
-        ('Airline Staff', 'airline staff'),
-        ('Airport Staff', 'airport staff'),
-        ('Passenger', 'passenger'),
-        ('Security Personnel', 'security personnel'),
-        ('IT Support', 'IT support')
+        ('Employee', 'employee'),
+        ('Manager', 'manager'),
     )
 
     email = models.EmailField(unique=True)
@@ -67,7 +64,9 @@ class User(AbstractUser):
     last_name = models.CharField(max_length=100)
     otp = models.IntegerField(default=0000)
     role = models.CharField(
-        max_length=200, choices=options, default='Passenger')
+        max_length=200, choices=options, default='Employee')
+    manager = models.ForeignKey('self', null=True, blank=True,
+                                on_delete=models.SET_NULL, related_name='subordinates')
 
     is_active = models.BooleanField(default=False)
 
@@ -82,3 +81,26 @@ class User(AbstractUser):
 
         """
         return self.email
+
+
+class Task(models.Model):
+    RATING_CHOICES = (
+        (0, '0'),
+        (1, '1'),
+        (2, '2'),
+        (3, '3'),
+        (4, '4'),
+        (5, '5'),
+    )
+
+    task = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=False)
+    assigned_by = models.ForeignKey(User, on_delete=models.CASCADE, null=False)
+    rate = models.IntegerChoices(choices=RATING_CHOICES, )
+
+
+class Notes(models.Model):
+    note = models.TextField()
+    written_by = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, null=False)
