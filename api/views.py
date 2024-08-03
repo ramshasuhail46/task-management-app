@@ -14,6 +14,9 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.contrib.auth.tokens import default_token_generator
 
+from api.serializer import DailyCheckinSerializer
+from api.models import DailyCheckin
+
 User = get_user_model()
 
 # Create your views here.
@@ -118,4 +121,20 @@ class PasswordResetConfirmAPI(APIView):
                     return Response({"error": "Invalid token."}, status=status.HTTP_400_BAD_REQUEST)
             except User.DoesNotExist:
                 return Response({"error": "User with this email does not exist."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DailyCheckinAPI(APIView):
+    def post(self, request):
+        serializer = DailyCheckinSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data['email']
+            try:
+                user = User.objects.get(email=email)
+            except User.DoesNotExist:
+                return Response({'email': 'User with this email does not exist.'}, status=status.HTTP_400_BAD_REQUEST)
+            datetime_of_checkin = serializer.validated_data['datetime_of_checkin']
+            DailyCheckin.objects.create(
+                user=user, datetime_of_checkin=datetime_of_checkin)
+            return Response({'message': 'check-in time added', 'data': serializer.data}, status=status.HTTP_202_ACCEPTED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

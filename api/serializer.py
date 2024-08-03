@@ -2,6 +2,9 @@ from django.contrib.auth import get_user_model
 
 from rest_framework import serializers
 from django.contrib.auth.models import User
+from rest_framework.exceptions import ValidationError
+
+from api.models import DailyCheckin
 
 User = get_user_model()
 
@@ -46,7 +49,26 @@ class EmailVerificationSerializer(serializers.Serializer):
 class PasswordResetSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
+
 class PasswordResetConfirmSerializer(serializers.Serializer):
     email = serializers.EmailField()
     token = serializers.CharField()
     new_password = serializers.CharField()
+
+
+class DailyCheckinSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(write_only=True)
+
+    class Meta:
+        model = DailyCheckin
+        fields = ['datetime_of_checkin', 'email']
+
+    def create(self, validated_data):
+        email = validated_data.pop('email')
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            raise ValidationError({"email": "User with this email does not exist."})
+        
+        checkin = DailyCheckin.objects.create(user=user, **validated_data)
+        return checkin
