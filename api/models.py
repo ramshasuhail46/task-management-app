@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import UserManager, AbstractUser
-
-import datetime
+from datetime import datetime
+from django.utils import timezone
 
 
 # Create your models here.
@@ -83,21 +83,26 @@ class User(AbstractUser):
         return self.email
 
 
+class DailyCheckin(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=False)
+    datetime_of_checkin = models.DateTimeField(default=timezone.now)
+
+
 class Task(models.Model):
-    RATING_CHOICES = (
-        (0, '0'),
-        (1, '1'),
-        (2, '2'),
-        (3, '3'),
-        (4, '4'),
-        (5, '5'),
-    )
+    class Rating(models.IntegerChoices):
+        ONE = 1, '1'
+        TWO = 2, '2'
+        THREE = 3, '3'
+        FOUR = 4, '4'
+        FIVE = 5, '5'
 
     task = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, null=False)
-    assigned_by = models.ForeignKey(User, on_delete=models.CASCADE, null=False)
-    rate = models.IntegerChoices(choices=RATING_CHOICES, )
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, null=False, related_name='assigned_to')
+    assigned_by = models.ForeignKey(
+        User, on_delete=models.CASCADE, null=False, related_name='assigned_by')
+    rate = models.IntegerField(choices=Rating.choices, default=Rating.ONE)
 
 
 class Notes(models.Model):
